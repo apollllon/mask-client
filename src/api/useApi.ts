@@ -2,7 +2,11 @@ import { useState } from "react";
 import { axios } from "./axios";
 import { isArray, isObject, mapValues, mapKeys, camelCase } from "lodash";
 
-const fCamelToSnake = (p: string) => {
+export type BaseResponse = {
+  message?: string;
+};
+
+export const fCamelToSnake = (p: string) => {
   //大文字を_+小文字にする(例:A を _a)
   return (
     p.charAt(0).toLowerCase() +
@@ -13,6 +17,51 @@ const fCamelToSnake = (p: string) => {
 };
 
 const snakeCase = fCamelToSnake;
+export const objectToFormData = (
+  obj: any,
+  form?: FormData,
+  namespace?: string
+) => {
+  let fd = form || new FormData();
+  let formKey: string;
+
+  for (var property in obj) {
+    if (obj.hasOwnProperty(property)) {
+      if (namespace) {
+        formKey = snakeCase(namespace) + "[" + snakeCase(property) + "]";
+      } else {
+        formKey = snakeCase(property);
+      }
+
+      // if the property is an object, but not a File,
+      // use recursivity.
+      if (
+        typeof obj[property] === "object" &&
+        !(obj[property] instanceof File) &&
+        !(obj[property] instanceof Array)
+      ) {
+        objectToFormData(obj[property], fd, property);
+      } else if (obj[property] instanceof Array) {
+        if (obj[property].length == 0) {
+          fd.append(formKey + "[]", "");
+        } else {
+          obj[property].forEach((element: any) => {
+            if (typeof element === "object") {
+              objectToFormData(element, fd, formKey + "[]");
+            } else {
+              fd.append(formKey + "[]", element);
+            }
+          });
+        }
+      } else {
+        // if it's a string or a File object
+        fd.append(formKey, obj[property]);
+      }
+    }
+  }
+
+  return fd;
+};
 
 // @ts-ignore
 const mapKeysDeep = (
@@ -38,7 +87,7 @@ export const mapKeysSnakeCase = (data: any) => {
   return mapKeysDeep(data, (_: string, key: string) => snakeCase(key));
 };
 
-export const useApi = <T, U>() => {
+export const useGetApi = <T extends BaseResponse, U>() => {
   const [response, setResponse] = useState<T>({} as T);
   const [loading, setLoading] = useState<boolean>(false);
   const f = async (url: string, params?: U) => {
@@ -49,12 +98,45 @@ export const useApi = <T, U>() => {
   };
 
   const execute = (url: string, params?: U) => {
+    if (loading) {
+      return;
+    }
     try {
       f(url, params);
     } catch (error) {
       console.error(error);
+      setLoading(false);
     }
   };
 
   return { response, loading, execute };
 };
+
+export function usePostApi<T extends BaseResponse, U>() {
+  const [response, setResponse] = useState<T>({} as T);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const execute = async (url: string, formObject: U) => {
+    if (loading) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = objectToFormData(formObject);
+      const result = await axios.post(url, formData, {
+        headers: { "content-type": "multipart/form-data" },
+      });
+      const data: T = result.data;
+      setResponse(() => data);
+
+      // フォームをクリアする
+      // form.resetForm()
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+    setLoading(false);
+  };
+
+  return { loading, response, execute };
+}

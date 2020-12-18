@@ -1,10 +1,10 @@
 import { MaskStatus } from "../entity/MaskStatus";
-import { useApi } from "./useApi";
+import { useGetApi, BaseResponse } from "./useApi";
 
-type MaskStatusResponse = MaskStatus;
+type MaskStatusResponse = MaskStatus & BaseResponse;
 
 export const useGetMaskStatus = () => {
-  const apiSet = useApi<MaskStatusResponse, null>();
+  const apiSet = useGetApi<MaskStatusResponse, null>();
   const url = "/api/status";
   const execute = () => {
     apiSet.execute(url);
