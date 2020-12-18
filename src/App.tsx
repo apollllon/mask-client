@@ -38,9 +38,11 @@ function App() {
   const [status, setStatus] = useState<MaskStatus>({ temp: 0, hum: 0, smell: 0 })
   const apiSet = useGetMaskStatus()
 
-  setInterval(() => {
-    apiSet.execute()
-  }, 1000)
+  useEffect(() => {
+    setInterval(() => {
+      apiSet.execute();
+    }, 1000)
+  }, []);
 
   useEffect(() => {
     setStatus(apiSet.response)
