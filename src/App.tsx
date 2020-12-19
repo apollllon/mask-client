@@ -4,6 +4,8 @@ import { Typography, makeStyles, AppBar, Toolbar, Fab } from '@material-ui/core'
 import { theme } from './materialui/theme';
 import { MaskStatus } from './entity/MaskStatus';
 import MicIcon from '@material-ui/icons/Mic';
+import MicOffIcon from '@material-ui/icons/MicOff';
+
 // 笑顔
 // import MoodIcon from '@material-ui/icons/Mood';
 // 嫌な顔
@@ -15,6 +17,8 @@ import TempWidget from './components/TempWidget';
 import HumWidget from './components/HumWidget';
 import SmellWidget from './components/SmellWidget';
 import UploadWidget from './components/UploadeWidget';
+import { usePostMaskMode } from './api/postMaskMode';
+import { MaskMode } from './entity/MaskMode';
 
 const useStyles = makeStyles({
   root: {
@@ -36,7 +40,16 @@ const useStyles = makeStyles({
 function App() {
   const classes = useStyles()
   const [status, setStatus] = useState<MaskStatus>({ temp: 0, hum: 0, smell: 0 })
+  const [maskMode, setMaskMode] = useState<MaskMode>({ mode: 'image' })
   const apiSet = useGetMaskStatus()
+  const postMaskModeApiSet = usePostMaskMode()
+  const handleClickMicButton = () => {
+    if (maskMode.mode === 'image') {
+      postMaskModeApiSet.execute({ mode: 'voice' })
+    } else if (maskMode.mode === 'voice') {
+      postMaskModeApiSet.execute({ mode: 'image' })
+    }
+  }
 
   useEffect(() => {
     setInterval(() => {
@@ -47,6 +60,10 @@ function App() {
   useEffect(() => {
     setStatus(apiSet.response)
   }, [apiSet.response])
+
+  useEffect(() => {
+    setMaskMode(postMaskModeApiSet.response)
+  }, [postMaskModeApiSet.response])
 
   return (
     <div className={classes.root}>
@@ -61,8 +78,13 @@ function App() {
       <TempWidget temp={status.temp} />
       <HumWidget hum={status.hum} />
       <UploadWidget />
-      <Fab className={classes.fab} color="primary" aria-label="add">
-        <MicIcon />
+      <Fab
+        className={classes.fab}
+        color={maskMode.mode === 'voice' ? "primary" : "default"}
+        aria-label="add"
+        onClick={handleClickMicButton}
+      >
+        {maskMode.mode === 'voice' ? <MicIcon /> : <MicOffIcon />}
       </Fab>
     </div>
   );
