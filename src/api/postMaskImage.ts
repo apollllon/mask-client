@@ -1,13 +1,13 @@
 import { usePostApi, BaseResponse } from "./useApi";
-import { MaskMode } from "../entity/MaskMode";
+import { MaskImage } from "../entity/MaskImage";
 
-type MaskImageResponse = { file: File } & BaseResponse;
+type MaskImageResponse = MaskImage & BaseResponse;
 
 export const usePostMaskImage = () => {
-  const apiSet = usePostApi<MaskImageResponse, MaskMode>();
+  const apiSet = usePostApi<MaskImageResponse, MaskImage>();
   const url = "/api/image";
-  const execute = (formObject: MaskMode) => {
-    apiSet.execute(url, formObject);
+  const execute = (maskImage: MaskImage) => {
+    apiSet.execute(url, maskImage);
   };
   return { ...apiSet, execute };
 };

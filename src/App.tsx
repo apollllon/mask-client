@@ -19,6 +19,8 @@ import SmellWidget from './components/SmellWidget';
 import UploadWidget from './components/UploadeWidget';
 import { usePostMaskMode } from './api/postMaskMode';
 import { MaskMode } from './entity/MaskMode';
+import { usePostMaskImage } from './api/postMaskImage';
+import { MaskImage } from './entity/MaskImage';
 
 const useStyles = makeStyles({
   root: {
@@ -41,8 +43,10 @@ function App() {
   const classes = useStyles()
   const [status, setStatus] = useState<MaskStatus>({ temp: 0, hum: 0, smell: 0 })
   const [maskMode, setMaskMode] = useState<MaskMode>({ mode: 'image' })
-  const apiSet = useGetMaskStatus()
+  const getMaskStatusApiSet = useGetMaskStatus()
   const postMaskModeApiSet = usePostMaskMode()
+  const postMaskImageApiSet = usePostMaskImage()
+
   const handleClickMicButton = () => {
     if (maskMode.mode === 'image') {
       postMaskModeApiSet.execute({ mode: 'voice' })
@@ -51,15 +55,20 @@ function App() {
     }
   }
 
+  const handleUploadImage = (maskImage: MaskImage) => {
+    postMaskImageApiSet.execute(maskImage)
+    setMaskMode({ mode: 'image' })
+  }
+
   useEffect(() => {
     setInterval(() => {
-      apiSet.execute();
+      getMaskStatusApiSet.execute();
     }, 1000)
   }, []);
 
   useEffect(() => {
-    setStatus(apiSet.response)
-  }, [apiSet.response])
+    setStatus(getMaskStatusApiSet.response)
+  }, [getMaskStatusApiSet.response])
 
   useEffect(() => {
     setMaskMode(postMaskModeApiSet.response)
@@ -77,7 +86,7 @@ function App() {
       <SmellWidget smell={status.smell} />
       <TempWidget temp={status.temp} />
       <HumWidget hum={status.hum} />
-      <UploadWidget />
+      <UploadWidget onUploadImage={handleUploadImage} />
       <Fab
         className={classes.fab}
         color={maskMode.mode === 'voice' ? "primary" : "default"}
